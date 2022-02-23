@@ -1,5 +1,5 @@
 ## ファイルの説明
-- main.rs
+- get_ranking.rs
 
   処理のプログラム本体
 
@@ -14,7 +14,8 @@
 ## 使い方
 
 ```
-$rustc main.rs && ./main game_score_log.csv
+$rustc get_ranking.rs 
+$./get_ranking game_score_log.csv
 ```
 
 ## 出力
