@@ -21,7 +21,7 @@ fn main() {
 
     //平均スコアでsort
     let mut sorted_mean_scores: Vec<(usize, Vec<String>)> = mean_scores.into_iter().collect();
-    sorted_mean_scores.sort_by(|x, y| x.1.cmp(&y.1));
+    sorted_mean_scores.sort_by(|x, y| y.0.cmp(&x.0));
 
     //fileの書き込み
     let output_file_name = "output.csv";
