@@ -11,13 +11,13 @@ fn main() {
     let mut file = BufReader::new(file_name);
 
     //スコアをユーザーごとに集計
-    let players: Vec<Player> = aggregate_score(&mut file);
+    let mut players: Vec<Player> = aggregate_score(&mut file);
+
+    //ユーザーをid順にソート
+    sort_players(&mut players);
 
     //平均スコアでユーザーをグループ分け
-    let mut mean_scores: HashMap<usize, Vec<String>> = group_by_mean_score(players);
-
-    //同一スコアのユーザーはid順にする
-    sort_by_id(&mut mean_scores);
+    let mean_scores: HashMap<usize, Vec<String>> = group_by_mean_score(players);
 
     //平均スコアでsort
     let mut sorted_mean_scores: Vec<(usize, Vec<String>)> = mean_scores.into_iter().collect();
@@ -93,15 +93,8 @@ fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
     mean_scores
 }
 
-fn sort_by_id(mean_scores: &mut HashMap<usize, Vec<String>>) -> &HashMap<usize, Vec<String>> {
-    for mean_score in mean_scores.values_mut() {
-        mean_score.sort_by(|x, y| {
-            let x_int: usize = x.replace("player", "").parse().expect("数字に変換できないidです");
-            let y_int: usize = y.replace("player", "").parse().expect("数字に変換できないidです");
-            x_int.cmp(&y_int)
-        });
-    }
-    mean_scores
+fn sort_players(players: &mut Vec<Player>) {
+    players.sort_by_key(|player| player.id.replace("player", "").parse::<usize>().expect("idを数字に変換できません"));
 }
 
 fn output_ranking_as_csv<W: std::io::Write> (writer: &mut BufWriter<W>, column_names: Vec<&str>, scores: Vec<(usize, Vec<String>)>, limit: usize) {
