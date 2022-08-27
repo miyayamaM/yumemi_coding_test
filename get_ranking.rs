@@ -107,20 +107,19 @@ fn output_ranking_as_csv<W: Write>(
         .write(header.as_bytes())
         .expect("ヘッダーの書き込みに失敗しました");
 
-    let mut index = 0;
     let mut counts = 0;
     let mut rank = 1;
-    while counts < limit {
-        //(score, [player_id])のタプル
-        let score_with_players = &scores[index];
-        for player_name in score_with_players.1.iter() {
-            let line = format!("{},{},{}\n", rank, player_name, score_with_players.0);
+    for (score, player_ids) in scores.iter() {
+        if counts >= limit {
+            break;
+        }
+        for player_id in player_ids {
+            let line = format!("{},{},{}\n", rank, player_id, score);
             writer
                 .write(line.as_bytes())
                 .expect("ファイルへの書き込みに失敗しました");
             counts += 1;
         }
-        rank += score_with_players.1.len();
-        index += 1;
+        rank += player_ids.len();
     }
 }
