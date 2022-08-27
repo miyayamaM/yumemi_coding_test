@@ -13,13 +13,13 @@ fn main() {
     let mut file = BufReader::new(file_name);
 
     //スコアをユーザーごとに集計
-    let mut players: Vec<Player> = aggregate_score(&mut file);
+    let mut players = aggregate_score(&mut file);
 
     //ユーザーをid順にソート
     sort_players(&mut players);
 
     //平均スコアでユーザーをグループ分け
-    let mean_scores: HashMap<usize, Vec<String>> = group_by_mean_score(players);
+    let mean_scores = group_by_mean_score(players);
 
     //平均スコアでsort
     let mut sorted_mean_scores: Vec<(usize, Vec<String>)> = mean_scores.into_iter().collect();
@@ -42,13 +42,12 @@ struct Player {
 }
 
 fn aggregate_score(file: &mut dyn BufRead) -> Vec<Player> {
-    let lines = file.lines();
     let mut players: Vec<Player> = Vec::new();
-    for line in lines.skip(1) {
+    for line in file.lines().skip(1) {
         let line = line.expect("ファイルの読み取りに失敗しました");
 
         let score: Vec<&str> = line.split(",").collect();
-        let player_id: String = score[1].to_string();
+        let player_id = score[1].to_string();
         let game_score: usize = score[2].parse().expect("数字でないスコアがあります");
 
         match players.iter_mut().find(|player| player.id == player_id) {
