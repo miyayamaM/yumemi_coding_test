@@ -9,11 +9,11 @@ fn main() {
     if args.len() < 2 {
         panic!("csvファイルを指定してください。 USAGE: $./main <example.csv>")
     };
-    let file_name = File::open(&args[1]).expect("ファイルを開けませんでした");
-    let mut file = BufReader::new(file_name);
+    let file = File::open(&args[1]).expect("ファイルを開けませんでした");
+    let mut reader = BufReader::new(file);
 
     //スコアをユーザーごとに集計
-    let mut players = aggregate_score(&mut file);
+    let mut players = aggregate_score(&mut reader);
 
     //ユーザーをid順にソート
     sort_players(&mut players);
@@ -65,7 +65,7 @@ fn aggregate_score(file: &mut dyn BufRead) -> Vec<Player> {
             }
         };
     }
-    return players;
+    players
 }
 
 fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
@@ -107,10 +107,9 @@ fn output_ranking_as_csv<W: Write>(
         .write(header.as_bytes())
         .expect("ヘッダーの書き込みに失敗しました");
 
-    let mut counts = 0;
     let mut rank = 1;
     for (score, player_ids) in scores.iter() {
-        if counts >= limit {
+        if rank > limit {
             break;
         }
         for player_id in player_ids {
@@ -118,7 +117,6 @@ fn output_ranking_as_csv<W: Write>(
             writer
                 .write(line.as_bytes())
                 .expect("ファイルへの書き込みに失敗しました");
-            counts += 1;
         }
         rank += player_ids.len();
     }
