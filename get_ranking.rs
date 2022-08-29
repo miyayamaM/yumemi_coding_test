@@ -41,6 +41,12 @@ struct Player {
     play_counts: usize,
 }
 
+impl Player {
+    fn mean_score(&self) -> usize {
+        (self.total_score as f32 / self.play_counts as f32).round() as usize
+    }
+}
+
 fn aggregate_score(file: &mut dyn BufRead) -> Vec<Player> {
     let mut players: Vec<Player> = Vec::new();
     for line in file.lines().skip(1) {
@@ -72,11 +78,9 @@ fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
     let mut mean_scores: HashMap<usize, Vec<String>> = HashMap::new();
 
     for player in players {
-        let mean_score = player.total_score / player.play_counts;
-        match mean_scores.get_mut(&mean_score) {
+        match mean_scores.get_mut(&player.mean_score()) {
             None => {
-                let new_mean_score_player = vec![player.id];
-                mean_scores.insert(mean_score, new_mean_score_player);
+                mean_scores.insert(player.mean_score(), vec![player.id]);
             }
             Some(same_score_players) => {
                 same_score_players.push(player.id);
