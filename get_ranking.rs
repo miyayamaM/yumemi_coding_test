@@ -1,7 +1,10 @@
+use entites::player::Player;
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+
+mod entites;
 
 fn main() {
     //csvの読み込み
@@ -33,18 +36,6 @@ fn main() {
     let column_names = vec!["rank", "player_id", "mean_score"];
     let limit = 10;
     output_ranking_as_csv(&mut writer, column_names, sorted_mean_scores, limit);
-}
-
-struct Player {
-    id: String,
-    total_score: usize,
-    play_counts: usize,
-}
-
-impl Player {
-    fn mean_score(&self) -> usize {
-        (self.total_score as f32 / self.play_counts as f32).round() as usize
-    }
 }
 
 fn aggregate_score(file: &mut dyn BufRead) -> Vec<Player> {
