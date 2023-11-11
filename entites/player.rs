@@ -1,3 +1,5 @@
+#[derive(Debug, Clone)]
+
 pub struct Player {
     pub id: String,
     pub total_score: usize,
@@ -12,5 +14,12 @@ impl Player {
     pub fn add_game_score(&mut self, score: usize) {
         self.total_score += score;
         self.play_counts += 1;
+    }
+
+    pub fn get_id_number(&self) -> usize {
+        self.id
+            .replace("player", "")
+            .parse::<usize>()
+            .expect("idを数字に変換できません")
     }
 }

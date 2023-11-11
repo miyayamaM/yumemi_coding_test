@@ -18,10 +18,10 @@ fn main() {
 
     //スコアをユーザーごとに集計
     let player_list = aggregate_score(&mut reader);
-    let mut players = player_list.players;
 
     //ユーザーをid順にソート
-    sort_players(&mut players);
+    let player_list_sorted_by_id = player_list.sort_by_player_id();
+    let players = player_list_sorted_by_id.players;
 
     //平均スコアでユーザーをグループ分け
     let mean_scores = group_by_mean_score(players);
@@ -71,16 +71,6 @@ fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
         };
     }
     mean_scores
-}
-
-fn sort_players(players: &mut Vec<Player>) {
-    players.sort_by_key(|player| {
-        player
-            .id
-            .replace("player", "")
-            .parse::<usize>()
-            .expect("idを数字に変換できません")
-    });
 }
 
 fn output_ranking_as_csv<W: Write>(

@@ -1,5 +1,6 @@
 use Player;
 
+#[derive(Debug, Clone)]
 pub struct PlayerList {
     pub players: Vec<Player>,
 }
@@ -32,5 +33,13 @@ impl PlayerList {
         {
             player.add_game_score(score);
         }
+    }
+
+    pub fn sort_by_player_id(&self) -> PlayerList {
+        let mut player_list = self.clone();
+        player_list
+            .players
+            .sort_by(|player1, player2| player2.get_id_number().cmp(&player1.get_id_number()));
+        return player_list;
     }
 }
