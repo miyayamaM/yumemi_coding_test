@@ -5,7 +5,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn mean_score(&self) -> usize {
+    pub fn get_mean_score(&self) -> usize {
         (self.total_score as f32 / self.play_counts as f32).round() as usize
     }
 }

@@ -69,9 +69,9 @@ fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
     let mut mean_scores: HashMap<usize, Vec<String>> = HashMap::new();
 
     for player in players {
-        match mean_scores.get_mut(&player.mean_score()) {
+        match mean_scores.get_mut(&player.get_mean_score()) {
             None => {
-                mean_scores.insert(player.mean_score(), vec![player.id]);
+                mean_scores.insert(player.get_mean_score(), vec![player.id]);
             }
             Some(same_score_players) => {
                 same_score_players.push(player.id);
