@@ -1,6 +1,5 @@
 use entites::player::Player;
 use entites::player_list::PlayerList;
-use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -21,10 +20,9 @@ fn main() {
 
     //ユーザーをid順にソート
     let player_list_sorted_by_id = player_list.sort_by_player_id();
-    let players = player_list_sorted_by_id.players;
 
     //平均スコアでユーザーをグループ分け
-    let mean_scores = group_by_mean_score(players);
+    let mean_scores = player_list_sorted_by_id.group_by_mean_score();
 
     //平均スコアでsort
     let mut sorted_mean_scores: Vec<(usize, Vec<String>)> = mean_scores.into_iter().collect();
@@ -55,22 +53,6 @@ fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
         player_list.add_player_score(player_id, game_score)
     }
     player_list
-}
-
-fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
-    let mut mean_scores: HashMap<usize, Vec<String>> = HashMap::new();
-
-    for player in players {
-        match mean_scores.get_mut(&player.get_mean_score()) {
-            None => {
-                mean_scores.insert(player.get_mean_score(), vec![player.id]);
-            }
-            Some(same_score_players) => {
-                same_score_players.push(player.id);
-            }
-        };
-    }
-    mean_scores
 }
 
 fn output_ranking_as_csv<W: Write>(

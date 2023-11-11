@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use Player;
 
 #[derive(Debug, Clone)]
@@ -41,5 +42,22 @@ impl PlayerList {
             .players
             .sort_by(|player1, player2| player2.get_id_number().cmp(&player1.get_id_number()));
         return player_list;
+    }
+
+    pub fn group_by_mean_score(&self) -> HashMap<usize, Vec<String>> {
+        let mut players_grouped_by_mean_scores: HashMap<usize, Vec<String>> = HashMap::new();
+
+        for player in &self.players {
+            let mean_score = player.get_mean_score();
+            match players_grouped_by_mean_scores.get_mut(&mean_score) {
+                None => {
+                    players_grouped_by_mean_scores.insert(mean_score, vec![player.id.clone()]);
+                }
+                Some(same_score_players) => {
+                    same_score_players.push(player.id.clone());
+                }
+            };
+        }
+        players_grouped_by_mean_scores
     }
 }
