@@ -1,4 +1,5 @@
 use entites::player::Player;
+use entites::player_list::PlayerList;
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
@@ -16,7 +17,8 @@ fn main() {
     let mut reader = BufReader::new(file);
 
     //スコアをユーザーごとに集計
-    let mut players = aggregate_score(&mut reader);
+    let player_list = aggregate_score(&mut reader);
+    let mut players = player_list.players;
 
     //ユーザーをid順にソート
     sort_players(&mut players);
@@ -38,31 +40,21 @@ fn main() {
     output_ranking_as_csv(&mut writer, column_names, sorted_mean_scores, limit);
 }
 
-fn aggregate_score(file: &mut dyn BufRead) -> Vec<Player> {
-    let mut players: Vec<Player> = Vec::new();
+fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
+    let mut player_list = PlayerList {
+        players: Vec::new(),
+    };
     for line in file.lines().skip(1) {
         let line = line.expect("ファイルの読み取りに失敗しました");
 
         let score: Vec<&str> = line.split(",").collect();
-        let player_id = score[1].to_string();
+        let player_id = score[1];
         let game_score: usize = score[2].parse().expect("数字でないスコアがあります");
 
-        match players.iter_mut().find(|player| player.id == player_id) {
-            None => {
-                let new_player = Player {
-                    id: player_id,
-                    total_score: game_score,
-                    play_counts: 1,
-                };
-                players.push(new_player);
-            }
-            Some(player) => {
-                player.total_score += game_score;
-                player.play_counts += 1;
-            }
-        };
+        player_list.initialize_player(player_id);
+        player_list.add_player_score(player_id, game_score)
     }
-    players
+    player_list
 }
 
 fn group_by_mean_score(players: Vec<Player>) -> HashMap<usize, Vec<String>> {
