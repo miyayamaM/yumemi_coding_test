@@ -26,7 +26,7 @@ fn main() {
     let group_by_mean_score = player_list_sorted_by_id.group_by_mean_score();
 
     //平均スコアでsort
-    let sorted_mean_scores = group_by_mean_score.sort_by_score();
+    let sorted_groups = group_by_mean_score.sort_by_score();
 
     //fileの書き込み
     let output_file_name = "output.csv";
@@ -35,7 +35,7 @@ fn main() {
 
     let column_names = vec!["rank", "player_id", "mean_score"];
     let limit = 10;
-    output_ranking_as_csv(&mut writer, column_names, sorted_mean_scores, limit);
+    output_ranking_as_csv(&mut writer, column_names, sorted_groups, limit);
 }
 
 fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
