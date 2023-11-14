@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 use Player;
-use SameScoreGroups;
+use SameScoreGroupList;
 
 #[derive(Debug, Clone)]
 pub struct PlayerList {
@@ -45,10 +44,8 @@ impl PlayerList {
         return player_list;
     }
 
-    pub fn group_by_mean_score(&self) -> SameScoreGroups {
-        let mut players_grouped_by_mean_scores: SameScoreGroups = SameScoreGroups {
-            groups: HashMap::new(),
-        };
+    pub fn group_by_mean_score(&self) -> SameScoreGroupList {
+        let mut players_grouped_by_mean_scores = SameScoreGroupList { groups: Vec::new() };
 
         for player in &self.players {
             let mean_score = player.get_mean_score();

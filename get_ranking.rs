@@ -1,6 +1,7 @@
 use entites::player::Player;
 use entites::player_list::PlayerList;
-use entites::same_score_group::SameScoreGroups;
+use entites::same_score_group::SameScoreGroup;
+use entites::same_score_group_list::SameScoreGroupList;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -17,13 +18,13 @@ fn main() {
     let mut reader = BufReader::new(file);
 
     //スコアをユーザーごとに集計
-    let player_list = aggregate_score(&mut reader);
+    let player_list: PlayerList = aggregate_score(&mut reader);
 
     //ユーザーをid順にソート
     let player_list_sorted_by_id = player_list.sort_by_player_id();
 
     //平均スコアでユーザーをグループ分け
-    let group_by_mean_score = player_list_sorted_by_id.group_by_mean_score();
+    let group_by_mean_score: SameScoreGroupList = player_list_sorted_by_id.group_by_mean_score();
 
     //平均スコアでsort
     let sorted_groups = group_by_mean_score.sort_by_score();
@@ -58,7 +59,7 @@ fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
 fn output_ranking_as_csv<W: Write>(
     writer: &mut BufWriter<W>,
     column_names: Vec<&str>,
-    score_groups: SameScoreGroups,
+    score_groups: SameScoreGroupList,
     limit: usize,
 ) {
     let header = column_names.join(",") + "\n";
@@ -67,16 +68,16 @@ fn output_ranking_as_csv<W: Write>(
         .expect("ヘッダーの書き込みに失敗しました");
 
     let mut rank = 1;
-    for (score, player_ids) in score_groups.groups.iter() {
+    for group in score_groups.groups.iter() {
         if rank > limit {
             break;
         }
-        for player_id in player_ids {
-            let line = format!("{},{},{}\n", rank, player_id, score);
+        for player_id in group.player_ids.iter() {
+            let line = format!("{},{},{}\n", rank, player_id, group.score);
             writer
                 .write(line.as_bytes())
                 .expect("ファイルへの書き込みに失敗しました");
         }
-        rank += player_ids.len();
+        rank += group.players_counts();
     }
 }
