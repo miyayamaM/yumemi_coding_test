@@ -8,6 +8,10 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 
 mod entites;
 
+const OUTPUT_FILE_NAME: &str = "output.csv";
+const OUTPUT_FILE_HEADER: [&str; 3] = ["rank", "player_id", "mean_score"];
+const OUTPUT_LINES_LIMIT: usize = 10;
+
 fn main() {
     //csvの読み込み
     let args: Vec<String> = env::args().collect();
@@ -30,13 +34,14 @@ fn main() {
     let sorted_groups = group_by_mean_score.sort_by_score();
 
     //fileの書き込み
-    let output_file_name = "output.csv";
-    let file = File::create(output_file_name).expect("ファイルの生成に失敗しました");
+    let file = File::create(OUTPUT_FILE_NAME).expect("ファイルの生成に失敗しました");
     let mut writer = BufWriter::new(file);
-
-    let column_names = vec!["rank", "player_id", "mean_score"];
-    let limit = 10;
-    output_ranking_as_csv(&mut writer, column_names, sorted_groups, limit);
+    output_ranking_as_csv(
+        &mut writer,
+        OUTPUT_FILE_HEADER,
+        sorted_groups,
+        OUTPUT_LINES_LIMIT,
+    );
 }
 
 fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
@@ -58,7 +63,7 @@ fn aggregate_score(file: &mut dyn BufRead) -> PlayerList {
 
 fn output_ranking_as_csv<W: Write>(
     writer: &mut BufWriter<W>,
-    column_names: Vec<&str>,
+    column_names: [&str; 3],
     score_groups: SameScoreGroupList,
     limit: usize,
 ) {
