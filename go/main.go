@@ -7,6 +7,7 @@ import (
 	"maps"
 	"math"
 	"os"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -38,7 +39,7 @@ func main() {
 		return
 	}
 
-	players := make(map[string]Player)
+	players := make(map[PlayerId]Player)
 
 	for {
 		line, err := reader.Read()
@@ -58,7 +59,13 @@ func main() {
 			return
 		}
 
-		_, player_id, score_str := line[0], line[1], line[2]
+		_, player_id_str, score_str := line[0], line[1], line[2]
+
+		player_id, err := NewPlayerId(player_id_str)
+		if err != nil {
+			fmt.Println("不正なplayer_id:", err)
+			return
+		}
 
 		score, err := strconv.Atoi(score_str)
 		if err != nil {
@@ -124,7 +131,7 @@ func main() {
 		for _, player := range player_group {
 			record := []string{
 				strconv.Itoa(rank),
-				player.PlayerId,
+				string(player.PlayerId),
 				strconv.Itoa(player.AvarageScore()),
 			}
 			if err := writer.Write(record); err != nil {
@@ -142,7 +149,7 @@ func main() {
 
 // プレイヤーのスコアを記録する構造体
 type Player struct {
-	PlayerId     string
+	PlayerId     PlayerId
 	TotalScore   int
 	PlayingCount int
 }
@@ -161,4 +168,27 @@ func (p *Player) IncrementPlayingCount() {
 func (p Player) AvarageScore() int {
 	average := float64(p.TotalScore) / float64(p.PlayingCount)
 	return int(math.Round(average))
+}
+
+type PlayerId string
+
+func NewPlayerId(v string) (PlayerId, error) {
+	pattern := `player\d{4}$`
+
+	// 正規表現をコンパイル
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		fmt.Println("Error compiling regex:", err)
+		return "", err
+	}
+
+	// マッチングを行う
+	matches := re.FindString(v)
+
+	if matches == "" {
+		fmt.Printf("不正なplayer_id: %s\n", v)
+		return "", err
+	} else {
+		return PlayerId(matches), nil
+	}
 }
