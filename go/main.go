@@ -14,17 +14,15 @@ import (
 )
 
 func main() {
-	// コマンドライン引数を受ける
-	if len(os.Args) != 2 {
-		fmt.Println("コマンドライン引数が不正です")
-		fmt.Println("Usage: go run main.go <file_path>")
+	// コマンドライン引数を取得
+	filepath, err := getFilePathFromArgs()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	filepath := os.Args[1]
 
 	// ファイルを開く
 	file, err := os.Open(filepath)
-
 	if err != nil {
 		fmt.Println("ファイルを開けませんでした")
 		return
@@ -39,14 +37,44 @@ func main() {
 		return
 	}
 
+	// CSVファイルを読み込み、playerIdをkey、Playerをvalueに持つmapにまとめる
+	players, err := readPlayersFromCSV(reader)
+	if err != nil {
+		fmt.Println("CSVの読み込みエラー:", err)
+		return
+	}
+
+	// プレイヤーデータを平均スコアごとにグルーピング
+	playersGroupedByAvgScore := groupPlayersByAverageScore(players)
+
+	// CSVファイルに書き込み
+	if err := writeCSV("output.csv", playersGroupedByAvgScore); err != nil {
+		fmt.Println("CSVファイルの書き込みエラー:", err)
+	}
+}
+
+// コマンドライン引数からファイルパスを取得する関数
+func getFilePathFromArgs() (string, error) {
+	if len(os.Args) != 2 {
+		return "", fmt.Errorf("コマンドライン引数が不正です\nUsage: go run main.go <file_path>")
+	}
+	return os.Args[1], nil
+}
+
+// CSVからプレイヤーデータを読み込む関数
+func readPlayersFromCSV(reader *csv.Reader) ([]Player, error) {
+	// 同じPlayerIdのログは同じPlayerにまとめるので、
+	// 検索性から、playerIdをキーとしたmapに格納する
 	players := make(map[PlayerId]Player)
 
 	for {
 		line, err := reader.Read()
-
 		if err == io.EOF {
 			fmt.Println("CSVの読み込み完了")
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("CSVの読み込みエラー: %w", err)
 		}
 
 		// 空の行をスキップ
@@ -54,29 +82,22 @@ func main() {
 			continue
 		}
 
+		_, playerIDStr, scoreStr := line[0], line[1], line[2]
+
+		playerID, err := NewPlayerId(playerIDStr)
 		if err != nil {
-			fmt.Println("CSVの読み込みエラー:", err)
-			return
+			return nil, fmt.Errorf("不正なplayer_id: %w", err)
 		}
 
-		_, player_id_str, score_str := line[0], line[1], line[2]
-
-		player_id, err := NewPlayerId(player_id_str)
+		score, err := strconv.Atoi(scoreStr)
 		if err != nil {
-			fmt.Println("不正なplayer_id:", err)
-			return
+			return nil, fmt.Errorf("スコアの変換エラー: %w", err)
 		}
 
-		score, err := strconv.Atoi(score_str)
-		if err != nil {
-			fmt.Println("スコアの変換エラー:", err)
-			return
-		}
-
-		if player, exists := players[player_id]; !exists {
+		if player, exists := players[playerID]; !exists {
 			// 新しいプレイヤーを追加
-			players[player_id] = Player{
-				PlayerId:     player_id,
+			players[playerID] = Player{
+				PlayerId:     playerID,
 				TotalScore:   score,
 				PlayingCount: 1,
 			}
@@ -84,34 +105,28 @@ func main() {
 			// 既存のプレイヤーがいる場合、スコアを追加し、プレイ回数を増やす
 			player.AddScore(score)
 			player.IncrementPlayingCount()
-			players[player_id] = player
+			players[playerID] = player
 		}
 	}
 
-	// プレイヤーデータを平均スコアごとにグルーピング
-	players_grouped_by_avg_score := groupPlayersByAverageScore(players)
-
-	// 書き込み
-	if err := writeCSV("output.csv", players_grouped_by_avg_score); err != nil {
-		fmt.Println("CSVファイルの書き込みエラー:", err)
-	}
+	return slices.Collect(maps.Values(players)), nil
 }
 
 // プレイヤーデータを平均スコアごとにグルーピングする関数
 // 返り値は平均スコアを key, （同じ平均スコアの）Playerの配列 value にもつ map
-func groupPlayersByAverageScore(players map[PlayerId]Player) map[int][]Player {
-	players_grouped_by_avg_score := make(map[int][]Player)
+func groupPlayersByAverageScore(players []Player) map[int][]Player {
+	playersGroupedByAvgScore := make(map[int][]Player)
 
 	for _, player := range players {
 		avgScore := player.AvarageScore()
-		players_grouped_by_avg_score[avgScore] = append(players_grouped_by_avg_score[avgScore], player)
+		playersGroupedByAvgScore[avgScore] = append(playersGroupedByAvgScore[avgScore], player)
 	}
 
-	return players_grouped_by_avg_score
+	return playersGroupedByAvgScore
 }
 
 // CSVファイルに書き込む関数
-func writeCSV(filename string, players_grouped_by_avg_score map[int][]Player) error {
+func writeCSV(filename string, playersGroupedByAvgScore map[int][]Player) error {
 	outputFile, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("CSVファイルの作成エラー: %w", err)
@@ -128,16 +143,16 @@ func writeCSV(filename string, players_grouped_by_avg_score map[int][]Player) er
 	}
 
 	// 平均スコア順にソート
-	players_sorted_keys := slices.Collect(maps.Keys(players_grouped_by_avg_score))
-	sort.Sort(sort.Reverse(sort.IntSlice(players_sorted_keys)))
+	playersSortedKeys := slices.Collect(maps.Keys(playersGroupedByAvgScore))
+	sort.Sort(sort.Reverse(sort.IntSlice(playersSortedKeys)))
 
 	// 書き込み
 	rank := 1
-	max_player := 10
-	current_player := 0
-	for _, avg_score := range players_sorted_keys {
-		player_group := players_grouped_by_avg_score[avg_score]
-		for _, player := range player_group {
+	maxPlayer := 10
+	currentPlayer := 0
+	for _, avgScore := range playersSortedKeys {
+		playerGroup := playersGroupedByAvgScore[avgScore]
+		for _, player := range playerGroup {
 			record := []string{
 				strconv.Itoa(rank),
 				string(player.PlayerId),
@@ -147,9 +162,9 @@ func writeCSV(filename string, players_grouped_by_avg_score map[int][]Player) er
 				return fmt.Errorf("CSVレコードの書き込みエラー: %w", err)
 			}
 		}
-		rank += len(player_group)
-		current_player += len(player_group)
-		if current_player > max_player {
+		rank += len(playerGroup)
+		currentPlayer += len(playerGroup)
+		if currentPlayer > maxPlayer {
 			break
 		}
 	}
