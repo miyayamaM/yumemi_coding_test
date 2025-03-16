@@ -32,13 +32,11 @@ func main() {
 
 	// CSVリーダーを作成
 	reader := csv.NewReader(file)
-	header, err := reader.Read()
+	_, err = reader.Read()
 	if err != nil {
 		fmt.Println("CSVのヘッダー行読み込みエラー:", err)
 		return
 	}
-
-	fmt.Println(header)
 
 	players := make(map[string]Player)
 
@@ -82,13 +80,64 @@ func main() {
 			}
 		}
 	}
+
+	// 書き込み
+	outputFile, err := os.Create("output.csv")
+	if err != nil {
+		fmt.Println("CSVファイルの作成エラー:", err)
+		return
+	}
+	defer outputFile.Close()
+
+	writer := csv.NewWriter(outputFile)
+	defer writer.Flush()
+
+	// ヘッダーを書き込む
+	header := []string{"rank", "player_id", "mean_score"}
+	if err := writer.Write(header); err != nil {
+		fmt.Println("CSVヘッダーの書き込みエラー:", err)
+		return
+	}
+
+	// プレイヤーデータを書き込む
+	players_grouped_by_avg_score := make(map[int][]Player)
+
+	for _, player := range players {
+		if player_group, exists := players_grouped_by_avg_score[player.AvarageScore()]; exists {
+			// 同じ平均スコアのプレイヤーは同一グループにまとめる
+			players_grouped_by_avg_score[player.AvarageScore()] = append(player_group, player)
+		} else {
+			// 新しいプレイヤーを追加
+			players_grouped_by_avg_score[player.AvarageScore()] = append(players_grouped_by_avg_score[player.AvarageScore()], player)
+		}
+	}
 	// 平均スコア順にソート
-	players_sorted := slices.Collect(maps.Values(players))
-	sort.Slice(players_sorted, func(i, j int) bool {
-		// TODO: 同じ場合IDでソート
-		return players_sorted[i].AvarageScore() > players_sorted[j].AvarageScore()
-	})
-	fmt.Println(players_sorted)
+	players_sorted_keys := slices.Collect(maps.Keys(players_grouped_by_avg_score))
+	sort.Sort(sort.Reverse(sort.IntSlice(players_sorted_keys)))
+
+	// 書き込み
+	rank := 1
+	max_player := 10
+	current_player := 0
+	for _, avg_score := range players_sorted_keys {
+		player_group := players_grouped_by_avg_score[avg_score]
+		for _, player := range player_group {
+			record := []string{
+				strconv.Itoa(rank),
+				player.PlayerId,
+				strconv.Itoa(player.AvarageScore()),
+			}
+			if err := writer.Write(record); err != nil {
+				fmt.Println("CSVレコードの書き込みエラー:", err)
+				return
+			}
+		}
+		rank += len(player_group)
+		current_player += len(player_group)
+		if current_player > max_player {
+			break
+		}
+	}
 }
 
 // プレイヤーのスコアを記録する構造体
