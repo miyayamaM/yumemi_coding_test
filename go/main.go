@@ -73,26 +73,48 @@ func main() {
 			return
 		}
 
-		if player, exists := players[player_id]; exists {
-			// 既存のプレイヤーがいる場合、スコアを追加し、プレイ回数を増やす
-			player.AddScore(score)
-			player.IncrementPlayingCount()
-			players[player_id] = player
-		} else {
+		if player, exists := players[player_id]; !exists {
 			// 新しいプレイヤーを追加
 			players[player_id] = Player{
 				PlayerId:     player_id,
 				TotalScore:   score,
 				PlayingCount: 1,
 			}
+		} else {
+			// 既存のプレイヤーがいる場合、スコアを追加し、プレイ回数を増やす
+			player.AddScore(score)
+			player.IncrementPlayingCount()
+			players[player_id] = player
 		}
 	}
 
+	// プレイヤーデータを平均スコアごとにグルーピング
+	players_grouped_by_avg_score := groupPlayersByAverageScore(players)
+
 	// 書き込み
-	outputFile, err := os.Create("output.csv")
+	if err := writeCSV("output.csv", players_grouped_by_avg_score); err != nil {
+		fmt.Println("CSVファイルの書き込みエラー:", err)
+	}
+}
+
+// プレイヤーデータを平均スコアごとにグルーピングする関数
+// 返り値は平均スコアを key, （同じ平均スコアの）Playerの配列 value にもつ map
+func groupPlayersByAverageScore(players map[PlayerId]Player) map[int][]Player {
+	players_grouped_by_avg_score := make(map[int][]Player)
+
+	for _, player := range players {
+		avgScore := player.AvarageScore()
+		players_grouped_by_avg_score[avgScore] = append(players_grouped_by_avg_score[avgScore], player)
+	}
+
+	return players_grouped_by_avg_score
+}
+
+// CSVファイルに書き込む関数
+func writeCSV(filename string, players_grouped_by_avg_score map[int][]Player) error {
+	outputFile, err := os.Create(filename)
 	if err != nil {
-		fmt.Println("CSVファイルの作成エラー:", err)
-		return
+		return fmt.Errorf("CSVファイルの作成エラー: %w", err)
 	}
 	defer outputFile.Close()
 
@@ -102,22 +124,9 @@ func main() {
 	// ヘッダーを書き込む
 	header := []string{"rank", "player_id", "mean_score"}
 	if err := writer.Write(header); err != nil {
-		fmt.Println("CSVヘッダーの書き込みエラー:", err)
-		return
+		return fmt.Errorf("CSVヘッダーの書き込みエラー: %w", err)
 	}
 
-	// プレイヤーデータを書き込む
-	players_grouped_by_avg_score := make(map[int][]Player)
-
-	for _, player := range players {
-		if player_group, exists := players_grouped_by_avg_score[player.AvarageScore()]; exists {
-			// 同じ平均スコアのプレイヤーは同一グループにまとめる
-			players_grouped_by_avg_score[player.AvarageScore()] = append(player_group, player)
-		} else {
-			// 新しいプレイヤーを追加
-			players_grouped_by_avg_score[player.AvarageScore()] = append(players_grouped_by_avg_score[player.AvarageScore()], player)
-		}
-	}
 	// 平均スコア順にソート
 	players_sorted_keys := slices.Collect(maps.Keys(players_grouped_by_avg_score))
 	sort.Sort(sort.Reverse(sort.IntSlice(players_sorted_keys)))
@@ -135,8 +144,7 @@ func main() {
 				strconv.Itoa(player.AvarageScore()),
 			}
 			if err := writer.Write(record); err != nil {
-				fmt.Println("CSVレコードの書き込みエラー:", err)
-				return
+				return fmt.Errorf("CSVレコードの書き込みエラー: %w", err)
 			}
 		}
 		rank += len(player_group)
@@ -145,6 +153,8 @@ func main() {
 			break
 		}
 	}
+
+	return nil
 }
 
 // プレイヤーのスコアを記録する構造体
