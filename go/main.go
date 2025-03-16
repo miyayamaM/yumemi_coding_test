@@ -4,8 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"os"
+	"slices"
+	"sort"
 	"strconv"
 )
 
@@ -79,7 +82,13 @@ func main() {
 			}
 		}
 	}
-	fmt.Println(players)
+	// 平均スコア順にソート
+	players_sorted := slices.Collect(maps.Values(players))
+	sort.Slice(players_sorted, func(i, j int) bool {
+		// TODO: 同じ場合IDでソート
+		return players_sorted[i].AvarageScore() > players_sorted[j].AvarageScore()
+	})
+	fmt.Println(players_sorted)
 }
 
 // プレイヤーのスコアを記録する構造体
